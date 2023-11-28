@@ -1,0 +1,37 @@
+#CODIGO DE TRAYECTORIA RECTANGULAR 
+
+
+#!/usr/bin/env python3
+import rospy
+from geometry_msgs.msg import Twist
+import sys
+
+def move_turtle(line_vel, ang_vel, side_length):
+    rospy.init_node('P7A1_TRAYECTORIACIRCULAR', anonymous=True)
+    pub = rospy.Publisher('/turtle1/cmd_vel', Twist, queue_size=10)
+    rate = rospy.Rate(10)
+    vel = Twist()
+
+    for _ in range(4):  # Se realizarán 4 lados para formar un rectángulo
+        # avanza 
+        vel.linear.x = line_vel
+        vel.angular.z = 0
+        pub.publish(vel)
+        rospy.sleep(side_length / line_vel)  # Duración = distancia / velocidad
+	#aqui se supune que gira 
+        vel.linear.x = 0
+        vel.angular.z = ang_vel
+        pub.publish(vel)
+        rospy.sleep(3.2)  # se queda quieto y gira un cuarto de vuelta en radianes
+
+    # Detener la tortuga al finalizar el recorrido
+    vel.linear.x = 0
+    vel.angular.z = 0
+    pub.publish(vel)
+
+if _name_ == '_main_':
+    try:
+        side_length = 2.0  # Longitud de cada lado del rectángulo
+        move_turtle(1.0, 1.0, side_length)  # Velocidad lineal, velocidad angular, longitud del lado
+    except rospy.ROSInterruptException:
+        pass
