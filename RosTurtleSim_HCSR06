@@ -1,0 +1,75 @@
+#include <ros.h>
+#include <std_msgs/Int16.h>
+#include <geometry_msgs/Twist.h>
+
+// Definición de pines para el sensor ultrasónico
+#define echoPin 4
+#define trigPin 2
+
+// Variables para almacenar la duración y la distancia medida por el sensor
+long duracion;
+int distancia;
+
+// Nodo de ROS
+ros::NodeHandle nh;
+
+// Publicador para enviar los valores medidos por el sensor ultrasónico
+std_msgs::Int16 ultrasonic_msg;
+ros::Publisher ultrasonic_node("ultrasonic_values", &ultrasonic_msg);
+
+// Publicador para controlar la tortuga en turtlesim
+ros::Publisher turtle_cmd_vel("/turtle1/cmd_vel", &vel_msg);
+geometry_msgs::Twist vel_msg;
+
+void setup() {
+  // Configuración de los pines del sensor ultrasónico
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  // Inicialización del nodo ROS
+  nh.initNode();
+
+  // Publicación del topic con los valores del sensor ultrasónico
+  nh.advertise(ultrasonic_node);
+
+  // Publicación del topic para controlar la tortuga en turtlesim
+  nh.advertise(turtle_cmd_vel);
+}
+
+void loop() {
+  // Envío de un pulso para activar la medición del sensor ultrasónico
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Medición de la duración del eco del sensor ultrasónico para determinar la distancia
+  duracion = pulseIn(echoPin, HIGH);
+  distancia = 0.0343 * duracion * 0.5;
+
+  // Almacenamiento de la distancia medida en el mensaje ROS para publicarla
+  ultrasonic_msg.data = distancia;
+  ultrasonic_node.publish(&ultrasonic_msg);
+
+  // Control del movimiento de la tortuga basado en la distancia medida
+  if (distancia > 15) {
+    // Si la distancia es mayor a 15cm, se mueve la tortuga
+    vel_msg.linear.x = 1.0;  // Velocidad lineal
+    vel_msg.angular.z = 1.0; // Velocidad angular
+  } else {
+    // Si la distancia es menor o igual a 15cm, se detiene la tortuga
+    vel_msg.linear.x = 0.0;
+    vel_msg.angular.z = 0.0;
+  }
+
+  // Publicación del comando de movimiento para la tortuga en turtlesim
+  turtle_cmd_vel.publish(&vel_msg);
+
+  // Procesamiento de las suscripciones y publicaciones de ROS
+  nh.spinOnce();
+
+  // Retardo para evitar la saturación del sistema ROS
+  delay(100); // Ajustar según sea necesario
+}
+
